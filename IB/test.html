@@ -14,7 +14,6 @@ padding:0;
 background:#000;
 }
 #toolbar{
-height:30px;
 background:#353535
 }
 .toolbarn{
@@ -58,7 +57,7 @@ background:#353535
 </div>
 <div id="canvascon" style="position:absolute;left:200px;top:30px;right:0;bottom:0">
 	<div style="position:absolute;background:black;margin:0 auto;top:5px;bottom:0;left:10px;right:0">
-		<canvas id="c" ></canvas>
+		<canvas id="c" style="float:left"></canvas>
 		<div style="height:30px;line-height:30px;width:800px;position:absolute;left:0px;text-align:center;top:0px;cursor:crosshair;z-index:999;background:#79a39c;display:none;color:#fff;"  id="delarea">删除</div>
 	</div>
 </div>
@@ -517,7 +516,7 @@ window.onload=function(){
 		canvas.remove(ao.tipt);
 		canvas.renderAll();	
 	}
-	canvas.discardActiveObject();
+	//canvas.discardActiveObject();
 	$("#delarea").hide();
 	if(isdrawing&&drawings=='line'&&!ao){
 			var newcircle = new fabric.Circle({
@@ -653,9 +652,9 @@ window.onload=function(){
 	}
 	
 	panf=false;
-	if((!ao)&&(!isdrawing)){//showger
-		canvas.relativePan(new fabric.Point((newp.x-oldp.x)*deltat,(newp.y-oldp.y)*deltat))
-	}
+	//if((!ao)&&(!isdrawing)){//showger
+		//canvas.relativePan(new fabric.Point((newp.x-oldp.x)*deltat,(newp.y-oldp.y)*deltat))
+	//}
 	if(isdrawing&&(drawings=="rect"||drawings=="ellip")){
 		isdrawing=false;
 		temprect=null;
@@ -749,7 +748,7 @@ window.onload=function(){
     }
   }
 
-  fabric.Object.prototype.padding = 5;
+  //fabric.Object.prototype.padding = 5;
   fabric.Object.prototype.transparentCorners = false;
 
   f = fabric.Image.filters;
