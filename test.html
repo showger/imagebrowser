@@ -1,0 +1,998 @@
+<!DOCTYPE>
+<html lang="zh-cn">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title></title>
+
+<script src="fabric.min.js"></script>
+<script src="jquery-2.1.1.js"></script>
+<style>
+html,body{
+margin:0;
+padding:0;
+background:#000;
+}
+#toolbar{
+height:30px;
+background:#353535
+}
+.toolbarn{
+
+	width:100px;
+	height:30px;
+	line-height:30px;
+	text-align:center;
+	background:#40827e;
+	color:#fff;
+	float:left;
+	margin-left:2px;
+	cursor:pointer;
+}
+.toolbara{
+
+	width:100px;
+	height:30px;
+	line-height:30px;
+	text-align:center;
+	background:#e55100;
+	color:#fff;
+	float:left;
+	margin-left:2px;
+	cursor:pointer;
+}
+</style>
+</head>
+<body>
+<div id="toolbar">
+	<div class="toolbarn" onclick="alert(canvas.getZoom())">getzoom</div>
+	<div class="toolbarn" onclick="drawshap('line',this)">直线</div>
+	<div class="toolbarn" onclick="drawshap('angle',this)">角度</div>
+	<div class="toolbarn" onclick="drawshap('rect',this)">矩形</div>
+	<div class="toolbarn" onclick="drawshap('ellip',this)">椭圆</div>
+	<div class="toolbara" onclick="panandmove(this)">缩放移动</div>
+	<div class="toolbarn" onclick="flipX()">水平翻转</div>
+	<div class="toolbarn" onclick="flipY()">垂直翻转</div>
+	<div class="toolbarn" onclick="clearcanvas()">清除画板</div>
+	<div class="toolbarn" onclick="setwidth()" style="display:none">setWidth</div>
+</div>
+<div id="canvascon" style="position:absolute;left:200px;top:30px;right:0;bottom:0">
+	<div style="position:absolute;background:black;margin:0 auto;top:5px;bottom:0;left:10px;right:0">
+		<canvas id="c" ></canvas>
+		<div style="height:30px;line-height:30px;width:800px;position:absolute;left:0px;text-align:center;top:0px;cursor:crosshair;z-index:999;background:#79a39c;display:none;color:#fff;"  id="delarea">删除</div>
+	</div>
+</div>
+
+<div id="filterdiv" class="controls" style="background:#353535;color:white;width:200px;position:absolute;top:35px;left:0;font-size:12px;bottom:0;overflow:auto;padding-left:5px">
+  <h3>滤镜:</h3>
+  <label>开启 WebGl<input type="checkbox" id="webgl" checked></label>
+  <div id="bench" style="display:none">&nbsp;</div>
+  <p>
+    <label><span>灰度:</span> <input type="checkbox" id="grayscale" disabled></label><br />
+    <label><span>平均值.</span> <input type="radio" id="average" name="grayscale" ></label>
+    <label><span>亮度.</span> <input type="radio" id="lightness" name="grayscale" ></label>
+    <label><span>光度.</span> <input type="radio" id="luminosity" name="grayscale" ></label>
+  </p>
+  <p>
+    <label><span>反转:</span> <input type="checkbox" id="invert" disabled></label>
+  </p>
+  <p>
+    <label>Colormatrix 滤镜:</label>
+  </p>
+  <p>
+    <label><span>深褐色:</span> <input type="checkbox" id="sepia" disabled></label>
+  </p>
+  <p>
+    <label><span>黑/白:</span> <input type="checkbox" id="blackwhite" disabled></label>
+  </p>
+  <p>
+    <label><span>布朗尼:</span> <input type="checkbox" id="brownie" disabled></label>
+  </p>
+  <p>
+    <label><span>复古:</span> <input type="checkbox" id="vintage" disabled></label>
+  </p>
+  <p>
+    <label><span>柯达胶片:</span> <input type="checkbox" id="kodachrome" disabled></label>
+  </p>
+  <p>
+    <label><span>彩色印片:</span> <input type="checkbox" id="technicolor" disabled></label>
+  </p>
+  <p>
+    <label><span>宝丽来:</span> <input type="checkbox" id="polaroid" disabled></label>
+  </p>
+  <p>
+    <label><span>去色:</span> <input type="checkbox" id="remove-color" disabled></label><br>
+    <label>颜色: <input type="color" id="remove-color-color" value="#00f900"></label><br>
+    <br>
+    <label>步长: <input type="range" id="remove-color-distance" value="0.02" min="0" max="1" step="0.01" disabled></label>
+  </p>
+  <p>
+    <label><span>亮度:</span> <input type="checkbox" id="brightness" disabled></label>
+    <br>
+    <label>值: <input type="range" id="brightness-value" value="0.1" min="-1" max="1" step="0.003921" disabled></label>
+  </p>
+  <p>
+    <label><span>伽马:</span> <input type="checkbox" id="gamma" disabled></label>
+    <br>
+    <label>红: <input type="range" id="gamma-red" value="1" min="0.2" max="2.2" step="0.003921" disabled></label>
+    <br>
+    <label>绿: <input type="range" id="gamma-green" value="1" min="0.2" max="2.2" step="0.003921" disabled></label>
+    <br>
+    <label>蓝: <input type="range" id="gamma-blue" value="1" min="0.2" max="2.2" step="0.003921" disabled></label>
+
+  </p>
+  <p>
+    <label><span>对比度:</span> <input type="checkbox" id="contrast" disabled></label>
+    <br>
+    <label>值: <input type="range" id="contrast-value" value="0" min="-1" max="1" step="0.003921" disabled></label>
+  </p>
+  <p>
+    <label><span>饱和度:</span> <input type="checkbox" id="saturation" disabled></label>
+    <br>
+    <label>值: <input type="range" id="saturation-value" value="0" min="-1" max="1" step="0.003921" disabled></label>
+  </p>
+  <p>
+    <label><span>色调:</span> <input type="checkbox" id="hue" disabled></label>
+    <br>
+    <label>值: <input type="range" id="hue-value" value="0" min="-2" max="2" step="0.002" disabled></label>
+  </p>
+  <p>
+    <label><span>噪点:</span> <input type="checkbox" id="noise" disabled></label>
+    <br>
+    <label>值: <input type="range" id="noise-value" value="100" min="0" max="1000" disabled></label>
+  </p>
+  <p>
+    <label><span>像素化</span> <input type="checkbox" id="pixelate" disabled></label>
+    <br>
+    <label>值: <input type="range" id="pixelate-value" value="4" min="2" max="20" disabled></label>
+  </p>
+  <p>
+    <label><span>模糊:</span> <input type="checkbox" id="blur" disabled></label>
+    <br>
+    <label>值: <input type="range" id="blur-value" value="0.1" min="0" max="1" step="0.01" disabled></label>
+  </p>
+  <p>
+    <label><span>锐化:</span> <input type="checkbox" id="sharpen" disabled></label>
+  </p>
+  <p>
+    <label><span>浮雕:</span> <input type="checkbox" id="emboss" disabled></label>
+  </p>
+  <p>
+  <label><span>混合色彩:</span> <input type="checkbox" id="blend" disabled></label>
+  <br>
+  <label>模式:</label>
+    <select id="blend-mode" name="blend-mode">
+      <option selected value="add">叠加</option>
+      <option value="diff">差值</option>
+      <option value="subtract">减去</option>
+      <option value="multiply">正片叠底</option>
+      <option value="screen">滤色</option>
+      <option value="lighten">变亮</option>
+      <option value="darken">变暗</option>
+      <option value="overlay">叠加</option>
+      <option value="exclusion">排除</option>
+      <option value="tint">色彩</option>
+    </select>
+    <br>
+    <label>颜色: <input type="color" id="blend-color" value="#00f900"></label><br>
+    <label>Alpha: <input type="range" id="blend-alpha" min="0" max="1" value="1" step="0.01"></label><br>
+  </p>
+  <div style="display:none"><label><span>Blend Image:</span> <input type="checkbox" id="blend-image" disabled></label>
+  <br>
+  <label>Mode:</label>
+    <select id="blend-image-mode" name="blend-image-mode">
+      <option selected value="multiply">Multiply</option>
+      <option value="mask">Mask</option>
+    </select>
+    <br>
+    <label>Alpha: <input type="range" id="blend-image-alpha" min="0" max="1" value="1" step="0.01"></label><br>
+	</div>
+  </p>
+</div>
+</body>
+</html>
+<script>
+var deltat=1;
+var oldp;
+var canvas;
+var isdrawing=false;
+var drawings=""
+var panf=false;
+var drawline=false;
+var tempcircle;
+var tgroup;
+var temppoint;
+var moveobj=false;
+var temprect;
+var tempellip;
+var bimg;
+function clearcanvas(){
+	var objs=canvas.getObjects();
+	for(i=objs.length;i>0;i--){
+	
+		if(objs[i]!=bimg){
+			canvas.remove(objs[i]);
+		}
+		
+	}
+	canvas.renderAll();
+}
+function flipX(){
+	bimg.flipX=!bimg.flipX;
+	canvas.renderAll();
+}
+function flipY(){
+	bimg.flipY=!bimg.flipY;
+	canvas.renderAll();
+}
+function getlineinfo(){
+	canvas.getActiveObject().setCoords();
+   var apath=canvas.getActiveObject().points;
+}
+function drawshap(shape,obj){
+	isdrawing=true;
+	panf=false;
+	drawings=shape;
+	$("#toolbar div").removeClass().addClass("toolbarn");
+	$(obj).removeClass().addClass("toolbara");
+}
+function panandmove(obj){
+	panf=false;
+	drawings='';
+	$("#toolbar div").removeClass().addClass("toolbarn");
+	$(obj).removeClass().addClass("toolbara");
+} 
+window.onload=function(){
+	resizefun();
+	canvas = new fabric.Canvas('c');
+	canvas.setWidth(800)
+	canvas.setHeight(600)
+	canvas.selection =false;
+	canvas.selectionLineWidth=0;
+	
+	fabric.Object.prototype.originX = fabric.Object.prototype.originY = 'center';
+	$(canvas.wrapperEl).on('mousewheel', function(e) {
+		var delta = e.originalEvent.wheelDelta / 120;
+		if(delta>0&&deltat<=8){
+			deltat+=0.1;
+		}else if(delta<0&&deltat>=0.1){
+			deltat-=0.1;
+		}
+		canvas.zoomToPoint(new fabric.Point(e.offsetX,e.offsetY),deltat)
+		canvas.renderAll();
+	})
+	canvas.on('object:moving',function(options){
+		var ao=canvas.getActiveObject();
+		if(ao.itype=="irect"){
+			ao.tipt.left=ao.left+10;
+			ao.tipt.top=ao.top+10;
+			canvas.renderAll();
+		}else if(ao.itype=="iellip"){
+			ao.tipt.left=ao.left;
+			ao.tipt.top=ao.top;
+			canvas.renderAll();
+		}
+	})
+	canvas.on('mouse:down', function(options) {
+	  var ao=canvas.getActiveObject();
+	  if(ao==null){
+		  if(drawings=="rect"||drawings=="ellip"){
+			isdrawing=true;
+			var mouse = canvas.getPointer(options.e);
+			temppoint=new fabric.Point(mouse.x,mouse.y);
+		  }else{
+			panf=true;
+		  }
+	  }else{
+	  moveobj=true;
+	  }	
+	  
+	 
+	 
+	})
+	canvas.on('object:scaling',function(options){
+		var ao=canvas.getActiveObject();
+		if(ao.itype=="irect"){
+			var area=(ao.width*ao.scaleX*ao.height*ao.scaleY).toFixed(2)+"px²";
+			ao.tipt.text=area;
+			ao.tipt.left=ao.left+10;
+			ao.tipt.top=ao.top+10;
+			canvas.renderAll();
+		}else if(ao.itype=="iellip"){
+			var area=(Math.PI*ao.rx*ao.scaleX*ao.ry*ao.scaleY).toFixed(2)+"px²";
+			ao.tipt.text=area;
+			ao.tipt.left=ao.left;
+			ao.tipt.top=ao.top;
+			canvas.renderAll();
+		}
+	})
+	
+	canvas.on('mouse:move', function(options) {
+	  var newp = canvas.getPointer(options.e,false);
+	  var ao=canvas.getActiveObject();
+	  var x=options.e.movementX
+	  var y=options.e.movementY
+	  if(ao&&ao.itype.indexOf("point_")<0){
+		$("#delarea").show();
+		if(options.e.offsetY<=25){
+			$("#delarea").css("background-color","red");
+		}else{
+			$("#delarea").css("background-color","#79a39c");
+		}
+	  }
+	  if(ao&&ao.itype.indexOf("point_")<0&&moveobj){
+		  if(ao.itype=="irect"||ao.itype=="iellip"){
+		  
+		  }else{
+			  for(i=0;i<ao.parry.length;i++){
+					if(ao.parry[i]!=ao){
+						ao.parry[i].left+=x/deltat;
+						ao.parry[i].top+=y/deltat;
+						ao.parry[i].bringToFront();
+						ao.parry[i].setCoords();
+						canvas.renderAll();
+					}
+				}
+				ao.tipt.left+=x/deltat;
+				ao.tipt.top+=y/deltat;
+				ao.tipt.setCoords();
+				canvas.renderAll();
+		  
+		  }
+		
+	  }else if(ao&&ao.itype.indexOf("point_")>=0&&moveobj){
+		if(ao.itype=="point_linep1"||ao.itype=="point_linep2"){
+			canvas.remove(ao.parry[1]);
+			//var str='M '+ao.parry[0].left+' '+ao.parry[0].top+' L '+ao.parry[2].left+' '+ao.parry[2].top+' z';
+			var line=new fabric.Line([ao.parry[0].left,ao.parry[0].top,ao.parry[2].left,ao.parry[2].top],{
+				stroke: '#00d6fd',
+				strokeWidth: 2,
+				hasControls:false,
+				hasBorders:false,
+				fill: false,
+				hasControls:false
+			});
+			canvas.add(line);
+			line.itype="lined";
+			line.tipt=ao.tipt;
+			canvas.renderAll();
+			ao.parry[1]=line;
+			line.parry=ao.parry;
+			ao.tipt.left=ao.parry[2].left;
+			ao.tipt.top=ao.parry[2].top+30;
+			ao.tipt.setCoords();
+			var p1=new fabric.Point(ao.parry[0].left,ao.parry[0].top);
+			var p2=new fabric.Point(ao.parry[2].left,ao.parry[2].top);
+			var dis=p1.distanceFrom(p2);
+			ao.tipt.text=dis.toFixed(2)+"";
+			ao.tipt.fontSize="20";
+			canvas.renderAll();
+		}else if(ao.itype=="point_anglep1"||ao.itype=="point_anglep3"){
+			var cindex=(ao.itype=="point_anglep1")?0:4;
+			var lindex=(ao.itype=="point_anglep1")?1:3;
+			canvas.remove(ao.parry[lindex]);
+			var line=new fabric.Line([ao.parry[cindex].left,ao.parry[cindex].top,ao.parry[2].left,ao.parry[2].top],{
+				stroke: '#00d6fd',
+				strokeWidth: 2,
+				hasControls:false,
+				hasBorders:false,
+				fill: false,
+				hasControls:false
+			});
+			canvas.add(line);
+			line.itype="lined";
+			line.tipt=ao.tipt;
+			canvas.renderAll();
+			ao.parry[lindex]=line;
+			line.parry=ao.parry;
+			
+			
+			var angle=getAngle(ao.parry[0],ao.parry[2],ao.parry[4]);
+			ao.tipt.left=ao.parry[2].left;
+			ao.tipt.top=ao.parry[2].top+30;
+			ao.tipt.setColor("#00d6fd");
+			ao.tipt.fontSize="20";
+			ao.tipt.text=angle.toFixed(2)+"°";
+			canvas.renderAll();
+			
+		}else if(ao.itype=="point_anglep2"){
+			canvas.remove(ao.parry[1]);
+			var line=new fabric.Line([ao.parry[0].left,ao.parry[0].top,ao.parry[2].left,ao.parry[2].top],{
+				stroke: '#00d6fd',
+				strokeWidth: 2,
+				hasControls:false,
+				hasBorders:false,
+				fill: false,
+				hasControls:false
+			});
+			canvas.add(line);
+			line.itype="lined";
+			line.tipt=ao.tipt;
+			canvas.renderAll();
+			ao.parry[1]=line;
+			line.parry=ao.parry;
+			
+			
+			canvas.remove(ao.parry[3]);
+			var line2=new fabric.Line([ao.parry[4].left,ao.parry[4].top,ao.parry[2].left,ao.parry[2].top],{
+				stroke: '#00d6fd',
+				strokeWidth: 2,
+				hasControls:false,
+				hasBorders:false,
+				fill: false,
+				hasControls:false
+			});
+			canvas.add(line2);
+			line2.itype="lined";
+			line2.tipt=ao.tipt;
+			
+			ao.parry[3]=line2;
+			line2.parry=ao.parry;
+			canvas.renderAll();
+			var angle=getAngle(ao.parry[0],ao.parry[2],ao.parry[4]);
+			ao.tipt.left=ao.parry[2].left;
+			ao.tipt.top=ao.parry[2].top+30;
+			ao.tipt.setColor("#00d6fd");
+			ao.tipt.fontSize="20";
+			ao.tipt.text=angle.toFixed(2)+"°";
+			
+			canvas.renderAll();
+		}
+	  }
+	  
+		if(isdrawing&&drawings=="rect"&&temppoint!=null){
+			if(temprect!=null){
+			 canvas.remove(temprect.tipt);
+			 canvas.remove(temprect);
+			 canvas.renderAll();
+			}
+			var mouse = canvas.getPointer(options.e);
+			var width=mouse.x-temppoint.x;
+			var height=mouse.y-temppoint.y;
+			var left=temppoint.x;
+			var top=temppoint.y;
+			if(width<0){
+				left=mouse.x;
+			}
+			if(height<0){
+				top=mouse.y;
+			}
+			temprect=new fabric.Rect({left:left,top:top,width:width,height:height,originX:"left",originY:"top",opacity:0.2,hasRotatingPoint:false,doNotZoom: false});
+			temprect.itype="irect";
+			var area=(width*height).toFixed(2)+"px²"
+			var tipt=new fabric.Text(area, { left:left+5, top:top+10,hasControls:false,hasBorders:false,removeAble:false,selectable:false,originX:"left",originY:"top"});
+			tipt.setColor("#00d6fd");
+			tipt.fontSize="20";
+			temprect.tipt=tipt
+			canvas.add(temprect);
+			canvas.add(tipt);
+			canvas.renderAll();
+		}else if(isdrawing&&drawings=="ellip"&&temppoint!=null){
+			var pointer = canvas.getPointer(options.e);
+			if(tempellip!=null){
+			 canvas.remove(tempellip.tipt);
+			 canvas.remove(tempellip);
+			 canvas.renderAll();
+			}
+			tempellip=new fabric.Ellipse({
+				left: temppoint.x,
+				top: temppoint.y,
+				opacity:0.2,
+				hasRotatingPoint:false,
+				originX: 'center', 
+				originY: 'center',
+				 rx:  Math.abs(temppoint.x - pointer.x),
+				ry: Math.abs(temppoint.y - pointer.y)
+			  });
+			tempellip.itype="iellip";
+			var area=(Math.PI*tempellip.rx*tempellip.ry).toFixed(2)+"px²"
+			var tipt=new fabric.Text(area, { left:temppoint.x, top:temppoint.y,hasControls:false,hasBorders:false,removeAble:false,selectable:false,originX:"center",originY:"center"});
+			tipt.setColor("#00d6fd");
+			tipt.fontSize="20";
+			tempellip.tipt=tipt
+			canvas.add(tempellip);
+			canvas.add(tipt);
+			canvas.renderAll();
+		}
+	  if(panf&&!ao){
+		var newp = canvas.getPointer(options.e,false);
+		canvas.relativePan(new fabric.Point(x,y))
+	  }
+	})
+	canvas.on('mouse:up', function(options) {
+	moveobj=false;
+	var newp = canvas.getPointer(options.e);
+	var ao=canvas.getActiveObject();
+	var x=options.e.movementX;
+	var y=options.e.movementY;
+	if(ao&&options.e.offsetY<=25){
+		if(ao.itype=="irect"||ao.itype=="iellip"){
+			canvas.remove(ao);
+		}else{
+			for(i=0;i<ao.parry.length;i++){
+				canvas.remove(ao.parry[i]);
+			}
+		}
+		
+		canvas.remove(ao.tipt);
+		canvas.renderAll();	
+	}
+	canvas.discardActiveObject();
+	$("#delarea").hide();
+	if(isdrawing&&drawings=='line'&&!ao){
+			var newcircle = new fabric.Circle({
+			left: newp.x,
+			top: newp.y,
+			strokeWidth: 4,
+			radius: 6,
+			fill: '#fff',
+			stroke: '#666',
+			hasControls:false,
+			hasBorders:false,
+			doNotZoom: false
+		});
+		newcircle.setCoords();
+		canvas.add(newcircle);
+		canvas.renderAll();
+		if(tempcircle){
+
+			//var str='M '+tempcircle.left+' '+tempcircle.top+' L '+newcircle.left+' '+newcircle.top+' z';
+			var newline=new fabric.Line([tempcircle.left,tempcircle.top,newcircle.left,newcircle.top],{
+				stroke: '#00d6fd',
+				strokeWidth: 2,
+				fill: false,
+				hasControls:false,
+				hasBorders:false,
+				doNotZoom: false
+				
+			});
+			newline.setCoords();
+			canvas.add(newline);
+			
+			tempcircle.bringToFront();
+			newcircle.bringToFront();
+			newcircle.itype="point_linep2";
+			//drawline=false;
+			tempcircle.parry[1]=newline;
+			tempcircle.parry[2]=newcircle;
+			newline.parry=tempcircle.parry;
+			newcircle.parry=tempcircle.parry;
+			newline.itype="lined";
+			tempcircle.tipt.left=newcircle.left;
+			tempcircle.tipt.top=newcircle.top+30;
+			tempcircle.tipt.setColor("#00d6fd");
+			tempcircle.tipt.fontSize="20";
+			canvas.add(tempcircle.tipt);
+			var p1=new fabric.Point(tempcircle.left,tempcircle.top);
+			var p2=new fabric.Point(newcircle.left,newcircle.top);
+			var dis=p1.distanceFrom(p2);
+			tempcircle.tipt.text=dis.toFixed(2)+"px";
+			newline.tipt=tempcircle.tipt;
+			newcircle.tipt=tempcircle.tipt;
+			canvas.renderAll();
+			tempcircle=null;
+		}else{
+			newcircle.itype="point_linep1";
+			tempcircle=newcircle;
+			var parry=new Array();
+			parry[0]=newcircle;
+			var tipt=new fabric.Text('', { left: newcircle.left, top: newcircle.top,hasControls:false,hasBorders:false,removeAble:false,selectable:false});
+			tempcircle.parry=parry;
+			tempcircle.tipt=tipt;
+		}
+		
+		canvas.renderAll();
+	}
+	if(isdrawing&&drawings=='angle'&&!ao){
+			var   newcircle= new fabric.Circle({
+			originX:'center',
+			originY:'center',
+			left: newp.x,
+			top: newp.y,
+			strokeWidth: 4,
+			radius: 6,
+			hasControls:false,
+			hasBorders:false,
+			fill: '#fff',
+			stroke: '#666'
+		});
+		canvas.add(newcircle);
+		canvas.renderAll();
+		if(tempcircle){
+
+			var str='M '+tempcircle.left+' '+tempcircle.top+' L '+newcircle.left+' '+newcircle.top+' z';
+			var newline=new fabric.Line([tempcircle.left,tempcircle.top,newcircle.left,newcircle.top],{
+				stroke: '#00d6fd',
+				strokeWidth: 2,
+				hasControls:false,
+				hasBorders:false,
+				fill: false,
+				hasControls:false
+				
+			});
+			newline.setCoords();
+			canvas.add(newline);
+			
+			tempcircle.bringToFront();
+			newcircle.bringToFront();
+			
+			//drawline=false;
+			tempcircle.parry[tempcircle.parry.length]=newline;
+			tempcircle.parry[tempcircle.parry.length]=newcircle;
+			newline.parry=tempcircle.parry;
+			newline.tipt=tempcircle.tipt
+			newcircle.parry=tempcircle.parry;
+			newcircle.tipt=tempcircle.tipt;
+			newline.itype="lined";
+			if(tempcircle.parry.length==5){
+			newcircle.itype="point_anglep3";
+			var angle=getAngle(newcircle.parry[0],newcircle.parry[2],newcircle.parry[4]);
+			tempcircle.tipt.left=newcircle.parry[2].left;
+			tempcircle.tipt.top=newcircle.parry[2].top+30;
+			tempcircle.tipt.setColor("#00d6fd");
+			tempcircle.tipt.fontSize="20";
+			tempcircle.tipt.text=angle.toFixed(2)+"°";
+			canvas.add(tempcircle.tipt);
+			tempcircle=null;
+			}else{
+				newcircle.itype="point_anglep2";
+				tempcircle=newcircle;
+			}
+		}else{
+			newcircle.itype="point_anglep1";
+			tempcircle=newcircle;
+			var parry=new Array();
+			parry[0]=newcircle;
+			tempcircle.parry=parry;
+			var tipt=new fabric.Text('', { left: newcircle.left, top: newcircle.top,hasControls:false,hasBorders:false,removeAble:false,selectable:false});
+			tempcircle.parry=parry;
+			tempcircle.tipt=tipt;
+		}
+		
+		canvas.renderAll();
+	}
+	
+	panf=false;
+	if((!ao)&&(!isdrawing)){//showger
+		canvas.relativePan(new fabric.Point((newp.x-oldp.x)*deltat,(newp.y-oldp.y)*deltat))
+	}
+	if(isdrawing&&(drawings=="rect"||drawings=="ellip")){
+		isdrawing=false;
+		temprect=null;
+		temppoint=null;
+		tempellip=null;
+	}
+	})
+	fabric.Image.fromURL('https://img00.deviantart.net/2928/i/2017/295/0/4/cat_by_showger-dbre66g.jpg', function(oImg) {
+
+	//oImg.scaleToWidth(600,true);
+	
+	oImg.hasControls=false;
+	oImg.lockMovementX=true;
+	oImg.lockMovementY=true;
+	oImg.selectable=false;
+	oImg.originX='left';
+	oImg.originY='top';
+	oImg.hoverCursor='default';
+	canvas.add(oImg);
+	bimg=oImg;
+	deltat=canvas.width/oImg.width;
+	canvas.zoomToPoint(new fabric.Point(0,0), deltat);
+	canvas.renderAll();
+	//canvas.viewportCenterObjectH(oImg);
+	
+	
+	fabric.util.toArray(document.getElementsByTagName('input'))
+                          .forEach(function(el){ el.disabled = false; })
+
+      var filters = ['grayscale', 'invert', 'remove-color', 'sepia', 'brownie',
+                      'brightness', 'contrast', 'saturation', 'noise', 'vintage',
+                      'pixelate', 'blur', 'sharpen', 'emboss', 'technicolor',
+                      'polaroid', 'blend-color', 'gamma', 'kodachrome',
+                      'blackwhite', 'blend-image', 'hue', 'resize'];
+
+      for (var i = 0; i < filters.length; i++) {
+        filters[i] && (
+        $(filters[i]).checked = !!bimg.filters[i]);
+      }
+	
+});
+
+
+
+
+
+
+
+
+
+
+
+  // manually initialize 2 filter backend to give ability to switch:
+  var webglBackend = new fabric.WebglFilterBackend();
+  var canvas2dBackend = new fabric.Canvas2dFilterBackend()
+
+  fabric.filterBackend = webglBackend;
+  fabric.Object.prototype.transparentCorners = false;
+  //var $ = function(id){return document.getElementById(id)};
+
+  function applyFilter(index, filter) {
+    var obj = bimg;
+    obj.filters[index] = filter;
+    var timeStart = +new Date();
+    obj.applyFilters();
+    var timeEnd = +new Date();
+    var dimString = bimg.width + ' x ' +
+      bimg.height;
+    $('#bench').get(0).innerHTML = dimString + 'px ' +
+      parseFloat(timeEnd-timeStart) + 'ms';
+    canvas.renderAll();
+  }
+
+  function getFilter(index) {
+    var obj = bimg;
+    return obj.filters[index];
+  }
+
+  function applyFilterValue(index, prop, value) {
+    var obj = bimg;
+    if (obj.filters[index]) {
+      obj.filters[index][prop] = value;
+      var timeStart = +new Date();
+      obj.applyFilters();
+      var timeEnd = +new Date();
+      var dimString = bimg.width + ' x ' +
+        bimg.height;
+      $('#bench').get(0).innerHTML = dimString + 'px ' +
+        parseFloat(timeEnd-timeStart) + 'ms';
+      canvas.renderAll();
+    }
+  }
+
+  fabric.Object.prototype.padding = 5;
+  fabric.Object.prototype.transparentCorners = false;
+
+  f = fabric.Image.filters;
+
+
+ /* fabric.Image.fromURL('pug.jpg', function(img) {
+    var oImg = img.set({ left: 0, top: 0}).scale(0.25);
+    canvas.add(oImg);
+  });
+  fabric.Image.fromURL('printio.png', function(img) {
+    var oImg = img.set({ left: 150, top: 0}).scale(0.4);
+    canvas.add(oImg);
+  });
+  fabric.Image.fromURL('dragon.jpg', function(img) {
+    var oImg = img.set({ left: 0, top: 270}).scale(0.2);
+    canvas.add(oImg);
+  });
+  fabric.Image.fromURL('dragon2.jpg', function(img) {
+    var oImg = img.set({ left: 0, top: 500}).scale(0.2);
+    canvas.add(oImg);
+  });*/
+  var indexF;
+  $('#webgl').get(0).onclick = function() {
+    if (this.checked) {
+      fabric.filterBackend = webglBackend;
+    } else {
+      fabric.filterBackend = canvas2dBackend;
+    }
+  };
+  $('#brownie').get(0).onclick = function() {
+    applyFilter(4, this.checked && new f.Brownie());
+  };
+  $('#vintage').get(0).onclick = function() {
+    applyFilter(9, this.checked && new f.Vintage());
+  };
+  $('#technicolor').get(0).onclick = function() {
+    applyFilter(14, this.checked && new f.Technicolor());
+  };
+  $('#polaroid').get(0).onclick = function() {
+    applyFilter(15, this.checked && new f.Polaroid());
+  };
+  $('#kodachrome').get(0).onclick = function() {
+    applyFilter(18, this.checked && new f.Kodachrome());
+  };
+  $('#blackwhite').get(0).onclick = function() {
+    applyFilter(19, this.checked && new f.BlackWhite());
+  };
+  $('#grayscale').get(0).onclick = function() {
+    applyFilter(0, this.checked && new f.Grayscale());
+  };
+  $('#average').get(0).onclick = function() {
+    applyFilterValue(0, 'mode', 'average');
+  };
+  $('#luminosity').get(0).onclick = function() {
+    applyFilterValue(0, 'mode', 'luminosity');
+  };
+  $('#lightness').get(0).onclick = function() {
+    applyFilterValue(0, 'mode', 'lightness');
+  };
+  $('#invert').get(0).onclick = function() {
+    applyFilter(1, this.checked && new f.Invert());
+  };
+  $('#remove-color').get(0).onclick = function () {
+    applyFilter(2, this.checked && new f.RemoveColor({
+      distance: $('#remove-color-distance').value,
+      color: $('#remove-color-color').value,
+    }));
+  };
+  $('#remove-color-color').get(0).onchange = function() {
+    applyFilterValue(2, 'color', this.value);
+  };
+  $('#remove-color-distance').get(0).oninput = function() {
+    applyFilterValue(2, 'distance', this.value);
+  };
+  $('#sepia').get(0).onclick = function() {
+    applyFilter(3, this.checked && new f.Sepia());
+  };
+  $('#brightness').get(0).onclick = function () {
+    applyFilter(5, this.checked && new f.Brightness({
+      brightness: parseFloat($('#brightness-value').get(0).value)
+    }));
+  };
+  $('#brightness-value').get(0).oninput = function() {
+    applyFilterValue(5, 'brightness', parseFloat(this.value));
+  };
+  $('#gamma').get(0).onclick = function () {
+    var v1 = parseFloat($('#gamma-red').get(0).value);
+    var v2 = parseFloat($('#gamma-green').get(0).value);
+    var v3 = parseFloat($('#gamma-blue').get(0).value);
+    applyFilter(17, this.checked && new f.Gamma({
+      gamma: [v1, v2, v3]
+    }));
+  };
+  $('#gamma-red').get(0).oninput = function() {
+    var current = getFilter(17).gamma;
+    current[0] = parseFloat(this.value);
+    applyFilterValue(17, 'gamma', current);
+  };
+  $('#gamma-green').get(0).oninput = function() {
+    var current = getFilter(17).gamma;
+    current[1] = parseFloat(this.value);
+    applyFilterValue(17, 'gamma', current);
+  };
+  $('#gamma-blue').get(0).oninput = function() {
+    var current = getFilter(17).gamma;
+    current[2] = parseFloat(this.value);
+    applyFilterValue(17, 'gamma', current);
+  };
+  $('#contrast').get(0).onclick = function () {
+    applyFilter(6, this.checked && new f.Contrast({
+      contrast: parseFloat($('#contrast-value').get(0).value)
+    }));
+  };
+  $('#contrast-value').get(0).oninput = function() {
+    applyFilterValue(6, 'contrast', parseFloat(this.value));
+  };
+  $('#saturation').get(0).onclick = function () {
+    applyFilter(7, this.checked && new f.Saturation({
+      saturation: parseFloat($('#saturation-value').get(0).value)
+    }));
+  };
+  $('#saturation-value').get(0).oninput = function() {
+    applyFilterValue(7, 'saturation', parseFloat(this.value));
+  };
+  $('#noise').get(0).onclick = function () {
+    applyFilter(8, this.checked && new f.Noise({
+      noise: parseInt($('#noise-value').get(0).value, 10)
+    }));
+  };
+  $('#noise-value').get(0).oninput = function() {
+    applyFilterValue(8, 'noise', parseInt(this.value, 10));
+  };
+  $('#pixelate').get(0).onclick = function() {
+    applyFilter(10, this.checked && new f.Pixelate({
+      blocksize: parseInt($('#pixelate-value').get(0).value, 10)
+    }));
+  };
+  $('#pixelate-value').get(0).oninput = function() {
+    applyFilterValue(10, 'blocksize', parseInt(this.value, 10));
+  };
+  $('#blur').get(0).onclick = function() {
+    applyFilter(11, this.checked && new f.Blur({
+      value: parseFloat($('#blur-value').value)
+    }));
+  };
+  $('#blur-value').get(0).oninput = function() {
+    applyFilterValue(11, 'blur', parseFloat(this.value, 10));
+  };
+  $('#sharpen').get(0).onclick = function() {
+    applyFilter(12, this.checked && new f.Convolute({
+      matrix: [  0, -1,  0,
+                -1,  5, -1,
+                 0, -1,  0 ]
+    }));
+  };
+  $('#emboss').get(0).onclick = function() {
+    applyFilter(13, this.checked && new f.Convolute({
+      matrix: [ 1,   1,  1,
+                1, 0.7, -1,
+               -1,  -1, -1 ]
+    }));
+  };
+  $('#blend').get(0).onclick= function() {
+    applyFilter(16, this.checked && new f.BlendColor({
+      color: document.getElementById('blend-color').value,
+      mode: document.getElementById('blend-mode').value,
+      alpha: document.getElementById('blend-alpha').value
+    }));
+  };
+
+  $('#blend-mode').get(0).onchange = function() {
+    applyFilterValue(16, 'mode', this.value);
+  };
+
+  $('#blend-color').get(0).onchange = function() {
+    applyFilterValue(16, 'color', this.value);
+  };
+
+  $('#blend-alpha').get(0).oninput = function() {
+    applyFilterValue(16, 'alpha', this.value);
+  };
+
+  $('#hue').get(0).onclick= function() {
+    applyFilter(21, this.checked && new f.HueRotation({
+      rotation: document.getElementById('hue-value').value,
+    }));
+  };
+
+  $('#hue-value').get(0).oninput = function() {
+    applyFilterValue(21, 'rotation', this.value);
+  };
+
+  $('#blend-image').get(0).onclick= function() {
+    applyFilter(20, this.checked && new f.BlendImage({
+      image: bimg,
+    }));
+  };
+
+  $('#blend-image-mode').get(0).onchange = function() {
+    applyFilterValue(20, 'mode', this.value);
+  };
+  var imageElement = document.createElement('img');
+  imageElement.src = 'printio.png';
+  var fImage = new fabric.Image(imageElement);
+  fImage.scaleX = 1;
+  fImage.scaleY = 1;
+  fImage.top = 15;
+  fImage.left = 15;
+  
+  
+  
+  
+  
+  
+  
+  
+      
+}
+/*
+zoomToPoint
+fabric.Point
+*/
+
+function setwidth(){
+canvas.setDimensions({width:400, height:400});
+}
+
+function getAngle(A,B,C){
+	var AB = Math.sqrt(Math.pow(B.left-A.left,2)+ Math.pow(B.top-A.top,2));    
+	var BC = Math.sqrt(Math.pow(B.left-C.left,2)+ Math.pow(B.top-C.top,2)); 
+	var AC = Math.sqrt(Math.pow(C.left-A.left,2)+ Math.pow(C.top-A.top,2));
+	var angle=Math.acos((BC*BC+AB*AB-AC*AC)/(2*BC*AB))
+	return (angle* 180) / Math.PI;
+}
+</script>
+
+<script>
+window.onresize=function(){
+	resizefun();
+}
+function resizefun(){
+	var swdith=$(window).width();
+	var sheight=$(window).height();
+	$("#filterdiv").height(sheight-30-5);
+}
+</script>
